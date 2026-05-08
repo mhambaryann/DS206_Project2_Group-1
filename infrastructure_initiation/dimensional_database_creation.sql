@@ -1,6 +1,5 @@
 /*
 Dimensional Database Creation Script
-Author: Member 1
 */
 
 USE master;
