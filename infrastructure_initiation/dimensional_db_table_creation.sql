@@ -1,307 +1,219 @@
--- ============================================
--- DIMENSIONAL DATABASE TABLE CREATION SCRIPT
--- Database: ORDER_DDS
--- Author: Group 3
--- ============================================
-
 USE ORDER_DDS;
 GO
 
-/* =========================================================
-   DIM_SOR
-========================================================= */
+DROP TABLE IF EXISTS FactOrders_Error;
+DROP TABLE IF EXISTS FactOrders;
+DROP TABLE IF EXISTS DimSuppliers_History;
+DROP TABLE IF EXISTS DimTerritories;
+DROP TABLE IF EXISTS DimSuppliers;
+DROP TABLE IF EXISTS DimShippers;
+DROP TABLE IF EXISTS DimRegion;
+DROP TABLE IF EXISTS DimProducts;
+DROP TABLE IF EXISTS DimEmployees;
+DROP TABLE IF EXISTS DimCustomers;
+DROP TABLE IF EXISTS DimCategories;
+DROP TABLE IF EXISTS Dim_SOR;
+GO
 
 CREATE TABLE Dim_SOR (
     SOR_SK INT IDENTITY(1,1) PRIMARY KEY,
-    staging_table_name VARCHAR(255) NOT NULL
+    staging_table_name NVARCHAR(255) NOT NULL UNIQUE
 );
 GO
 
-/* =========================================================
-   DimCategories
-   SCD1 WITH DELETE
-========================================================= */
+INSERT INTO Dim_SOR (staging_table_name)
+VALUES
+('Staging_Categories'),
+('Staging_Customers'),
+('Staging_Employees'),
+('Staging_OrderDetails'),
+('Staging_Orders'),
+('Staging_Products'),
+('Staging_Region'),
+('Staging_Shippers'),
+('Staging_Suppliers'),
+('Staging_Territories');
+GO
 
 CREATE TABLE DimCategories (
     Category_SK INT IDENTITY(1,1) PRIMARY KEY,
-
     CategoryID_NK INT NOT NULL,
-    CategoryName VARCHAR(255),
-    Description VARCHAR(1000),
-
+    CategoryName NVARCHAR(255),
+    Description NVARCHAR(MAX),
     IsDeleted BIT DEFAULT 0,
-
     SOR_SK INT,
     staging_raw_id_sk INT,
-
     CreatedDate DATETIME DEFAULT GETDATE(),
     UpdatedDate DATETIME DEFAULT GETDATE(),
-
-    CONSTRAINT FK_DimCategories_SOR
-        FOREIGN KEY (SOR_SK)
-        REFERENCES Dim_SOR(SOR_SK)
+    FOREIGN KEY (SOR_SK) REFERENCES Dim_SOR(SOR_SK)
 );
 GO
-
-/* =========================================================
-   DimCustomers
-   SCD2
-========================================================= */
 
 CREATE TABLE DimCustomers (
     Customer_SK INT IDENTITY(1,1) PRIMARY KEY,
-
-    CustomerID_NK VARCHAR(10) NOT NULL,
-    CompanyName VARCHAR(255),
-    ContactName VARCHAR(255),
-    ContactTitle VARCHAR(255),
-    Address VARCHAR(255),
-    City VARCHAR(100),
-    Region VARCHAR(100),
-    PostalCode VARCHAR(20),
-    Country VARCHAR(100),
-    Phone VARCHAR(50),
-    Fax VARCHAR(50),
-
-    StartDate DATETIME NOT NULL,
-    EndDate DATETIME,
+    CustomerID_NK CHAR(5) NOT NULL,
+    CompanyName NVARCHAR(255),
+    ContactName NVARCHAR(255),
+    ContactTitle NVARCHAR(255),
+    Address NVARCHAR(255),
+    City NVARCHAR(255),
+    Region NVARCHAR(255),
+    PostalCode NVARCHAR(20),
+    Country NVARCHAR(100),
+    Phone NVARCHAR(50),
+    Fax NVARCHAR(50),
+    StartDate DATETIME NOT NULL DEFAULT GETDATE(),
+    EndDate DATETIME NULL,
     IsCurrent BIT DEFAULT 1,
-
     SOR_SK INT,
     staging_raw_id_sk INT,
-
     CreatedDate DATETIME DEFAULT GETDATE(),
     UpdatedDate DATETIME DEFAULT GETDATE(),
-
-    CONSTRAINT FK_DimCustomers_SOR
-        FOREIGN KEY (SOR_SK)
-        REFERENCES Dim_SOR(SOR_SK)
+    FOREIGN KEY (SOR_SK) REFERENCES Dim_SOR(SOR_SK)
 );
 GO
-
-/* =========================================================
-   DimEmployees
-   SCD1 WITH DELETE
-========================================================= */
 
 CREATE TABLE DimEmployees (
     Employee_SK INT IDENTITY(1,1) PRIMARY KEY,
-
     EmployeeID_NK INT NOT NULL,
-    LastName VARCHAR(255),
-    FirstName VARCHAR(255),
-    Title VARCHAR(255),
-    TitleOfCourtesy VARCHAR(50),
+    LastName NVARCHAR(255),
+    FirstName NVARCHAR(255),
+    Title NVARCHAR(255),
+    TitleOfCourtesy NVARCHAR(50),
     BirthDate DATETIME,
     HireDate DATETIME,
-    Address VARCHAR(255),
-    City VARCHAR(100),
-    Region VARCHAR(100),
-    PostalCode VARCHAR(20),
-    Country VARCHAR(100),
-    HomePhone VARCHAR(50),
-    Extension VARCHAR(20),
-    Notes VARCHAR(MAX),
+    Address NVARCHAR(255),
+    City NVARCHAR(255),
+    Region NVARCHAR(255),
+    PostalCode NVARCHAR(20),
+    Country NVARCHAR(100),
+    HomePhone NVARCHAR(50),
+    Extension NVARCHAR(10),
+    Notes NVARCHAR(MAX),
     ReportsTo INT,
-
+    PhotoPath NVARCHAR(255),
     IsDeleted BIT DEFAULT 0,
-
     SOR_SK INT,
     staging_raw_id_sk INT,
-
     CreatedDate DATETIME DEFAULT GETDATE(),
     UpdatedDate DATETIME DEFAULT GETDATE(),
-
-    CONSTRAINT FK_DimEmployees_SOR
-        FOREIGN KEY (SOR_SK)
-        REFERENCES Dim_SOR(SOR_SK)
+    FOREIGN KEY (SOR_SK) REFERENCES Dim_SOR(SOR_SK)
 );
 GO
 
-/* =========================================================
-   DimProducts
-   SCD2 WITH DELETE (CLOSING)
-========================================================= */
-
 CREATE TABLE DimProducts (
     Product_SK INT IDENTITY(1,1) PRIMARY KEY,
-
     ProductID_NK INT NOT NULL,
-    ProductName VARCHAR(255),
+    ProductName NVARCHAR(255),
     SupplierID_NK INT,
     CategoryID_NK INT,
-    QuantityPerUnit VARCHAR(255),
-    UnitPrice DECIMAL(10,2),
+    QuantityPerUnit NVARCHAR(255),
+    UnitPrice DECIMAL(18,2),
     UnitsInStock INT,
     UnitsOnOrder INT,
     ReorderLevel INT,
     Discontinued BIT,
-
-    StartDate DATETIME NOT NULL,
-    EndDate DATETIME,
+    StartDate DATETIME NOT NULL DEFAULT GETDATE(),
+    EndDate DATETIME NULL,
     IsCurrent BIT DEFAULT 1,
     IsDeleted BIT DEFAULT 0,
-
     SOR_SK INT,
     staging_raw_id_sk INT,
-
     CreatedDate DATETIME DEFAULT GETDATE(),
     UpdatedDate DATETIME DEFAULT GETDATE(),
-
-    CONSTRAINT FK_DimProducts_SOR
-        FOREIGN KEY (SOR_SK)
-        REFERENCES Dim_SOR(SOR_SK)
+    FOREIGN KEY (SOR_SK) REFERENCES Dim_SOR(SOR_SK)
 );
 GO
-
-/* =========================================================
-   DimRegion
-   SCD1
-========================================================= */
 
 CREATE TABLE DimRegion (
     Region_SK INT IDENTITY(1,1) PRIMARY KEY,
-
     RegionID_NK INT NOT NULL,
-    RegionDescription VARCHAR(255),
-
+    RegionDescription NVARCHAR(255),
+    RegionCategory NVARCHAR(255),
+    RegionImportance NVARCHAR(255),
     SOR_SK INT,
     staging_raw_id_sk INT,
-
     CreatedDate DATETIME DEFAULT GETDATE(),
     UpdatedDate DATETIME DEFAULT GETDATE(),
-
-    CONSTRAINT FK_DimRegion_SOR
-        FOREIGN KEY (SOR_SK)
-        REFERENCES Dim_SOR(SOR_SK)
+    FOREIGN KEY (SOR_SK) REFERENCES Dim_SOR(SOR_SK)
 );
 GO
-
-/* =========================================================
-   DimShippers
-   SCD1
-========================================================= */
 
 CREATE TABLE DimShippers (
     Shipper_SK INT IDENTITY(1,1) PRIMARY KEY,
-
     ShipperID_NK INT NOT NULL,
-    CompanyName VARCHAR(255),
-    Phone VARCHAR(50),
-
+    CompanyName NVARCHAR(255),
+    Phone NVARCHAR(50),
     SOR_SK INT,
     staging_raw_id_sk INT,
-
     CreatedDate DATETIME DEFAULT GETDATE(),
     UpdatedDate DATETIME DEFAULT GETDATE(),
-
-    CONSTRAINT FK_DimShippers_SOR
-        FOREIGN KEY (SOR_SK)
-        REFERENCES Dim_SOR(SOR_SK)
+    FOREIGN KEY (SOR_SK) REFERENCES Dim_SOR(SOR_SK)
 );
 GO
-
-/* =========================================================
-   DimSuppliers
-   SCD4
-========================================================= */
 
 CREATE TABLE DimSuppliers (
     Supplier_SK INT IDENTITY(1,1) PRIMARY KEY,
-
     SupplierID_NK INT NOT NULL,
-    CompanyName VARCHAR(255),
-    ContactName VARCHAR(255),
-    ContactTitle VARCHAR(255),
-    Address VARCHAR(255),
-    City VARCHAR(100),
-    Region VARCHAR(100),
-    PostalCode VARCHAR(20),
-    Country VARCHAR(100),
-    Phone VARCHAR(50),
-    Fax VARCHAR(50),
-    HomePage VARCHAR(MAX),
-
+    CompanyName NVARCHAR(255),
+    ContactName NVARCHAR(255),
+    ContactTitle NVARCHAR(255),
+    Address NVARCHAR(255),
+    City NVARCHAR(255),
+    Region NVARCHAR(255),
+    PostalCode NVARCHAR(20),
+    Country NVARCHAR(100),
+    Phone NVARCHAR(50),
+    Fax NVARCHAR(50),
+    HomePage NVARCHAR(MAX),
     SOR_SK INT,
     staging_raw_id_sk INT,
-
     CreatedDate DATETIME DEFAULT GETDATE(),
     UpdatedDate DATETIME DEFAULT GETDATE(),
-
-    CONSTRAINT FK_DimSuppliers_SOR
-        FOREIGN KEY (SOR_SK)
-        REFERENCES Dim_SOR(SOR_SK)
+    FOREIGN KEY (SOR_SK) REFERENCES Dim_SOR(SOR_SK)
 );
 GO
-
-/* =========================================================
-   DimSuppliers_History
-   SUPPORT TABLE FOR SCD4
-========================================================= */
 
 CREATE TABLE DimSuppliers_History (
     SupplierHistory_SK INT IDENTITY(1,1) PRIMARY KEY,
-
     SupplierID_NK INT NOT NULL,
-    CompanyName VARCHAR(255),
-    ContactName VARCHAR(255),
-    ContactTitle VARCHAR(255),
-    Address VARCHAR(255),
-    City VARCHAR(100),
-    Region VARCHAR(100),
-    PostalCode VARCHAR(20),
-    Country VARCHAR(100),
-    Phone VARCHAR(50),
-    Fax VARCHAR(50),
-    HomePage VARCHAR(MAX),
-
+    CompanyName NVARCHAR(255),
+    ContactName NVARCHAR(255),
+    ContactTitle NVARCHAR(255),
+    Address NVARCHAR(255),
+    City NVARCHAR(255),
+    Region NVARCHAR(255),
+    PostalCode NVARCHAR(20),
+    Country NVARCHAR(100),
+    Phone NVARCHAR(50),
+    Fax NVARCHAR(50),
+    HomePage NVARCHAR(MAX),
     VersionStartDate DATETIME,
     VersionEndDate DATETIME,
-
     SOR_SK INT,
     staging_raw_id_sk INT,
-
-    CONSTRAINT FK_DimSuppliersHistory_SOR
-        FOREIGN KEY (SOR_SK)
-        REFERENCES Dim_SOR(SOR_SK)
+    FOREIGN KEY (SOR_SK) REFERENCES Dim_SOR(SOR_SK)
 );
 GO
-
-/* =========================================================
-   DimTerritories
-   SCD3 (CURRENT + PRIOR ATTRIBUTE)
-========================================================= */
 
 CREATE TABLE DimTerritories (
     Territory_SK INT IDENTITY(1,1) PRIMARY KEY,
-
-    TerritoryID_NK VARCHAR(20) NOT NULL,
-    TerritoryDescription_Current VARCHAR(255),
-    TerritoryDescription_Prior VARCHAR(255),
+    TerritoryID_NK NVARCHAR(50) NOT NULL,
+    TerritoryDescription_Current NVARCHAR(255),
+    TerritoryDescription_Prior NVARCHAR(255),
+    TerritoryCode NVARCHAR(50),
     RegionID_NK INT,
-
     SOR_SK INT,
     staging_raw_id_sk INT,
-
     CreatedDate DATETIME DEFAULT GETDATE(),
     UpdatedDate DATETIME DEFAULT GETDATE(),
-
-    CONSTRAINT FK_DimTerritories_SOR
-        FOREIGN KEY (SOR_SK)
-        REFERENCES Dim_SOR(SOR_SK)
+    FOREIGN KEY (SOR_SK) REFERENCES Dim_SOR(SOR_SK)
 );
 GO
 
-/* =========================================================
-   FactOrders
-   SNAPSHOT FACT TABLE
-========================================================= */
-
 CREATE TABLE FactOrders (
     FactOrder_SK INT IDENTITY(1,1) PRIMARY KEY,
-
     OrderID_NK INT NOT NULL,
-
     Customer_SK INT,
     Employee_SK INT,
     Product_SK INT,
@@ -310,103 +222,50 @@ CREATE TABLE FactOrders (
     Shipper_SK INT,
     Territory_SK INT,
     Region_SK INT,
-
     OrderDate DATETIME,
     RequiredDate DATETIME,
     ShippedDate DATETIME,
-
-    UnitPrice DECIMAL(10,2),
+    UnitPrice DECIMAL(18,2),
     Quantity INT,
     Discount DECIMAL(5,2),
-    Freight DECIMAL(10,2),
-
+    Freight DECIMAL(18,2),
     SnapshotDate DATETIME DEFAULT GETDATE(),
-
     SOR_SK INT,
     staging_raw_id_sk INT,
-
     CreatedDate DATETIME DEFAULT GETDATE(),
-
-    CONSTRAINT FK_FactOrders_Customers
-        FOREIGN KEY (Customer_SK)
-        REFERENCES DimCustomers(Customer_SK),
-
-    CONSTRAINT FK_FactOrders_Employees
-        FOREIGN KEY (Employee_SK)
-        REFERENCES DimEmployees(Employee_SK),
-
-    CONSTRAINT FK_FactOrders_Products
-        FOREIGN KEY (Product_SK)
-        REFERENCES DimProducts(Product_SK),
-
-    CONSTRAINT FK_FactOrders_Categories
-        FOREIGN KEY (Category_SK)
-        REFERENCES DimCategories(Category_SK),
-
-    CONSTRAINT FK_FactOrders_Suppliers
-        FOREIGN KEY (Supplier_SK)
-        REFERENCES DimSuppliers(Supplier_SK),
-
-    CONSTRAINT FK_FactOrders_Shippers
-        FOREIGN KEY (Shipper_SK)
-        REFERENCES DimShippers(Shipper_SK),
-
-    CONSTRAINT FK_FactOrders_Territories
-        FOREIGN KEY (Territory_SK)
-        REFERENCES DimTerritories(Territory_SK),
-
-    CONSTRAINT FK_FactOrders_Region
-        FOREIGN KEY (Region_SK)
-        REFERENCES DimRegion(Region_SK),
-
-    CONSTRAINT FK_FactOrders_SOR
-        FOREIGN KEY (SOR_SK)
-        REFERENCES Dim_SOR(SOR_SK)
+    FOREIGN KEY (Customer_SK) REFERENCES DimCustomers(Customer_SK),
+    FOREIGN KEY (Employee_SK) REFERENCES DimEmployees(Employee_SK),
+    FOREIGN KEY (Product_SK) REFERENCES DimProducts(Product_SK),
+    FOREIGN KEY (Category_SK) REFERENCES DimCategories(Category_SK),
+    FOREIGN KEY (Supplier_SK) REFERENCES DimSuppliers(Supplier_SK),
+    FOREIGN KEY (Shipper_SK) REFERENCES DimShippers(Shipper_SK),
+    FOREIGN KEY (Territory_SK) REFERENCES DimTerritories(Territory_SK),
+    FOREIGN KEY (Region_SK) REFERENCES DimRegion(Region_SK),
+    FOREIGN KEY (SOR_SK) REFERENCES Dim_SOR(SOR_SK)
 );
 GO
-
-/* =========================================================
-   FactOrders_Error
-========================================================= */
 
 CREATE TABLE FactOrders_Error (
     FactError_SK INT IDENTITY(1,1) PRIMARY KEY,
-
     OrderID_NK INT,
-
-    CustomerID_NK VARCHAR(10),
+    CustomerID_NK CHAR(5),
     EmployeeID_NK INT,
     ProductID_NK INT,
-
-    ErrorReason VARCHAR(1000),
+    ErrorReason NVARCHAR(1000),
     ErrorDate DATETIME DEFAULT GETDATE(),
-
     SOR_SK INT,
     staging_raw_id_sk INT,
-
-    CONSTRAINT FK_FactOrdersError_SOR
-        FOREIGN KEY (SOR_SK)
-        REFERENCES Dim_SOR(SOR_SK)
+    FOREIGN KEY (SOR_SK) REFERENCES Dim_SOR(SOR_SK)
 );
 GO
 
-/* =========================================================
-   INDEXES
-========================================================= */
-
-CREATE INDEX IDX_DimCustomers_NK
-ON DimCustomers(CustomerID_NK);
+CREATE INDEX IDX_DimCustomers_NK ON DimCustomers(CustomerID_NK);
+CREATE INDEX IDX_DimProducts_NK ON DimProducts(ProductID_NK);
+CREATE INDEX IDX_DimEmployees_NK ON DimEmployees(EmployeeID_NK);
+CREATE INDEX IDX_DimCategories_NK ON DimCategories(CategoryID_NK);
+CREATE INDEX IDX_DimRegion_NK ON DimRegion(RegionID_NK);
+CREATE INDEX IDX_DimShippers_NK ON DimShippers(ShipperID_NK);
+CREATE INDEX IDX_DimSuppliers_NK ON DimSuppliers(SupplierID_NK);
+CREATE INDEX IDX_DimTerritories_NK ON DimTerritories(TerritoryID_NK);
+CREATE INDEX IDX_FactOrders_OrderID ON FactOrders(OrderID_NK);
 GO
-
-CREATE INDEX IDX_DimProducts_NK
-ON DimProducts(ProductID_NK);
-GO
-
-CREATE INDEX IDX_DimEmployees_NK
-ON DimEmployees(EmployeeID_NK);
-GO
-
-CREATE INDEX IDX_FactOrders_OrderID
-ON FactOrders(OrderID_NK);
-GO
-
