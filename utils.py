@@ -9,7 +9,9 @@ def generate_execution_id():
 def get_config(config_file='sql_server_config.cfg'):
     """Parses the configuration file."""
     config = configparser.ConfigParser()
-    config.read(config_file)
+    loaded_files = config.read(config_file)
+    if not loaded_files:
+        raise FileNotFoundError(f"Config file not found: {config_file}")
     if 'sql_server' not in config:
         raise KeyError("Section 'sql_server' not found in config file.")
     return config['sql_server']
@@ -26,7 +28,10 @@ def get_db_connection():
         f"DATABASE={cfg['database']};"
         f"Trusted_Connection=yes;"
     )
-    return pyodbc.connect(conn_str)
+    try:
+        return pyodbc.connect(conn_str)
+    except Exception as exc:
+        raise ConnectionError(f"Failed to connect to SQL Server: {exc}") from exc
 
 def read_sql_script(script_path):
     """Reads a .sql file and returns the string."""
