@@ -71,6 +71,29 @@ def test_get_config_empty_file_raises_key_error(tmp_path):
         utils.get_config(str(config_file))
 
 
+def test_normalize_odbc_driver_name_removes_outer_braces():
+    assert utils.normalize_odbc_driver_name("{ODBC Driver 18 for SQL Server}") == (
+        "ODBC Driver 18 for SQL Server"
+    )
+
+
+def test_validate_sql_config_missing_required_key_raises_key_error():
+    with pytest.raises(KeyError, match="database"):
+        utils.validate_sql_config(
+            {
+                "driver": "{ODBC Driver 18 for SQL Server}",
+                "server": "localhost",
+            }
+        )
+
+
+def test_validate_odbc_driver_missing_driver_raises_connection_error(monkeypatch):
+    monkeypatch.setattr(utils, "get_available_odbc_drivers", lambda: [])
+
+    with pytest.raises(ConnectionError, match="not installed or registered"):
+        utils.validate_odbc_driver("{ODBC Driver 18 for SQL Server}")
+
+
 def test_read_sql_script_success_path(tmp_path):
     script_file = tmp_path / "query.sql"
     script_file.write_text("SELECT 1;", encoding="utf-8")
@@ -88,7 +111,10 @@ def test_read_sql_script_missing_file_raises_file_not_found(tmp_path):
 def test_get_db_connection_calls_pyodbc_with_expected_connection_string(monkeypatch):
     expected_connection = object()
     connect_mock = Mock(return_value=expected_connection)
-    fake_pyodbc = types.SimpleNamespace(connect=connect_mock)
+    fake_pyodbc = types.SimpleNamespace(
+        connect=connect_mock,
+        drivers=lambda: ["ODBC Driver 18 for SQL Server"],
+    )
 
     monkeypatch.setitem(sys.modules, "pyodbc", fake_pyodbc)
     monkeypatch.setattr(
@@ -114,7 +140,10 @@ def test_get_db_connection_calls_pyodbc_with_expected_connection_string(monkeypa
 
 def test_get_db_connection_wraps_pyodbc_failure(monkeypatch):
     connect_mock = Mock(side_effect=RuntimeError("driver unavailable"))
-    fake_pyodbc = types.SimpleNamespace(connect=connect_mock)
+    fake_pyodbc = types.SimpleNamespace(
+        connect=connect_mock,
+        drivers=lambda: ["ODBC Driver 18 for SQL Server"],
+    )
 
     monkeypatch.setitem(sys.modules, "pyodbc", fake_pyodbc)
     monkeypatch.setattr(
@@ -129,3 +158,24 @@ def test_get_db_connection_wraps_pyodbc_failure(monkeypatch):
 
     with pytest.raises(ConnectionError, match="Failed to connect to SQL Server"):
         utils.get_db_connection()
+
+
+def test_get_db_connection_reports_missing_driver_before_connect(monkeypatch):
+    connect_mock = Mock()
+    fake_pyodbc = types.SimpleNamespace(connect=connect_mock, drivers=lambda: [])
+
+    monkeypatch.setitem(sys.modules, "pyodbc", fake_pyodbc)
+    monkeypatch.setattr(
+        utils,
+        "get_config",
+        lambda: {
+            "driver": "{ODBC Driver 18 for SQL Server}",
+            "server": "localhost",
+            "database": "ORDER_DDS",
+        },
+    )
+
+    with pytest.raises(ConnectionError, match="not installed or registered"):
+        utils.get_db_connection()
+
+    connect_mock.assert_not_called()
