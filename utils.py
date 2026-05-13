@@ -1,5 +1,4 @@
 import configparser
-import pyodbc
 import os
 import uuid
 
@@ -17,6 +16,8 @@ def get_config(config_file='sql_server_config.cfg'):
 
 def get_db_connection():
     """Creates a connection to the SQL Server database."""
+    import pyodbc
+
     cfg = get_config()
     # Using Trusted Connection for local SQL Server
     conn_str = (
