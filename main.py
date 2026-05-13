@@ -1,5 +1,5 @@
 import argparse
-from logging import setup_logging
+from pipeline_logging import setup_logging
 
 def main():
     # Initialize logger and get the execution UUID

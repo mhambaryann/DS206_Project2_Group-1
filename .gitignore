@@ -1,0 +1,8 @@
+# internal docs
+docs/ 
+
+# env cache
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
