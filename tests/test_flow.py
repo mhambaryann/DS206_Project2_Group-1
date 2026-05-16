@@ -37,4 +37,4 @@ def test_dimensional_data_flow_exec_returns_same_execution_id(monkeypatch):
 
     result = flow.exec("2026-02-01", "2026-02-28")
 
-    assert result["execution_id"] == flow.execution_idtesttest
+    assert result["execution_id"] == flow.execution_id
