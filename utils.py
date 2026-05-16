@@ -9,15 +9,19 @@ def generate_execution_id():
     """Generates a unique UUID for execution tracking."""
     return str(uuid.uuid4())
 
-def get_config(config_file='sql_server_config.cfg'):
+
+def get_config(config_file="sql_server_config.cfg"):
     """Parses the configuration file."""
     config = configparser.ConfigParser()
     loaded_files = config.read(config_file)
+
     if not loaded_files:
         raise FileNotFoundError(f"Config file not found: {config_file}")
-    if 'sql_server' not in config:
+
+    if "sql_server" not in config:
         raise KeyError("Section 'sql_server' not found in config file.")
-    return config['sql_server']
+
+    return config["sql_server"]
 
 
 def normalize_odbc_driver_name(driver_name):
@@ -28,13 +32,13 @@ def normalize_odbc_driver_name(driver_name):
 def get_available_odbc_drivers():
     """Returns registered ODBC drivers without requiring callers to import pyodbc directly."""
     import pyodbc
-
     return pyodbc.drivers()
 
 
 def validate_sql_config(cfg):
     """Validates required SQL Server config keys."""
     missing_keys = [key for key in REQUIRED_SQL_CONFIG_KEYS if not cfg.get(key)]
+
     if missing_keys:
         raise KeyError(f"Missing required SQL config key(s): {', '.join(missing_keys)}")
 
@@ -43,7 +47,10 @@ def validate_odbc_driver(driver_name):
     """Checks whether the configured ODBC driver is installed and registered."""
     configured_driver = normalize_odbc_driver_name(driver_name)
     available_drivers = get_available_odbc_drivers()
-    normalized_available = {normalize_odbc_driver_name(driver) for driver in available_drivers}
+    normalized_available = {
+        normalize_odbc_driver_name(driver)
+        for driver in available_drivers
+    }
 
     if configured_driver not in normalized_available:
         available = ", ".join(available_drivers) if available_drivers else "none"
@@ -59,22 +66,49 @@ def get_db_connection():
 
     cfg = get_config()
     validate_sql_config(cfg)
-    validate_odbc_driver(cfg['driver'])
+    validate_odbc_driver(cfg["driver"])
 
-    conn_str = (
-        f"DRIVER={cfg['driver']};"
-        f"SERVER={cfg['server']};"
-        f"DATABASE={cfg['database']};"
-        f"Trusted_Connection={cfg.get('trusted_connection', 'yes')};"
-    )
+    driver = cfg["driver"]
+    server = cfg["server"]
+    database = cfg["database"]
+
+    username = cfg.get("username")
+    password = cfg.get("password")
+    trusted_connection = cfg.get("trusted_connection", "no").lower()
+
+    if username and password:
+        conn_str = (
+            f"DRIVER={driver};"
+            f"SERVER={server};"
+            f"DATABASE={database};"
+            f"UID={username};"
+            f"PWD={password};"
+            "TrustServerCertificate=yes;"
+        )
+    elif trusted_connection in ("yes", "true", "1"):
+        conn_str = (
+            f"DRIVER={driver};"
+            f"SERVER={server};"
+            f"DATABASE={database};"
+            "Trusted_Connection=yes;"
+            "TrustServerCertificate=yes;"
+        )
+    else:
+        raise KeyError(
+            "SQL config must contain either username/password "
+            "or trusted_connection=yes."
+        )
+
     try:
         return pyodbc.connect(conn_str)
     except Exception as exc:
         raise ConnectionError(f"Failed to connect to SQL Server: {exc}") from exc
 
+
 def read_sql_script(script_path):
     """Reads a .sql file and returns the string."""
     if not os.path.exists(script_path):
         raise FileNotFoundError(f"SQL script not found at {script_path}")
-    with open(script_path, 'r') as file:
+
+    with open(script_path, "r") as file:
         return file.read()
